@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const { data: fetchData, error: fetchError } = await supabaseAdmin
       .from('t_nonces')
       .select()
-      .eq('id', publicAddress)
+      .eq('public_address', publicAddress)
 
     if (fetchError) {
       throw new Error(fetchError.message)
@@ -33,13 +33,13 @@ Deno.serve(async (req) => {
 
       const { error: insertError } = await supabaseAdmin
         .from('t_nonces')
-        .insert({ id: publicAddress, nonce: nonce })
+        .insert({ public_address: publicAddress, nonce: nonce })
 
       if (insertError) {
         throw new Error(insertError.message)
       }
 
-      data = { id: publicAddress, nonce: nonce }
+      data = { public_address: publicAddress, nonce: nonce }
     }
 
     return new Response(JSON.stringify(data), {

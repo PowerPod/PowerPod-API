@@ -24,6 +24,8 @@ Deno.serve(async (req) => {
       throw new Error(fetchDeviceError.message)
     }
 
+    console.log(fetchDeviceData)
+
     if (fetchDeviceData.length == 0) {
       throw new Error('Device does not exist')
     }
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
     const { error: updateError } = await supabaseAdmin
       .from('t_nonces')
       .update({ nonce: newNonce })
-      .eq('id', publicAddress)
+      .eq('public_address', publicAddress)
 
     if (updateError) {
       throw new Error(updateError.message)
