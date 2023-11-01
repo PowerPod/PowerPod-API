@@ -1,6 +1,7 @@
 import { generateNonce as getNonce, SiweMessage } from 'siwe'
 import { corsHeaders } from '../_shared/cors.ts'
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts'
+import { isAddress } from '@ethersproject/address'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,6 +15,10 @@ Deno.serve(async (req) => {
     if (!publicAddress || !message || !signature || !publisherName)
       throw new Error('missing params')
 
+    if (!isAddress(publicAddress)) {
+      throw new Error('Invalid public address')
+    }
+
     const { data: fetchDeviceData, error: fetchDeviceError } =
       await supabaseAdmin
         .from('device_info')
@@ -24,32 +29,42 @@ Deno.serve(async (req) => {
       throw new Error(fetchDeviceError.message)
     }
 
-    console.log(fetchDeviceData)
-
     if (fetchDeviceData.length == 0) {
       throw new Error('Device does not exist')
     }
 
     const { data: fetchData, error: fetchError } = await supabaseAdmin
       .from('t_nonces')
-      .select('id, nonce')
-      .eq('id', publicAddress)
+      .select('public_address, nonce')
+      .eq('public_address', publicAddress)
 
     if (fetchError) {
       throw new Error(fetchError.message)
     }
 
     if (fetchData.length == 0) {
-      throw new Error('Invalid public address')
+      throw new Error('Nonce does not exist')
+    }
+    const { nonce } = fetchData[0]
+
+    let resp
+    try {
+      // const siweMessage = new SiweMessage({
+      //   nonce: 'oNCEHm5jzQU2WvuBB',
+      //   uri: 'https://localhost/login',
+      //   version: '1',
+      //   chainId: 1,
+      //   domain: 'https://localhost/login',
+      //   address: '0xC1a6A1DAA5A1aC828b6a5Ad1C59bc4bBF7be6723',
+      // })
+      const siweMessage = new SiweMessage(JSON.parse(message))
+      resp = await siweMessage.verify({ signature })
+    } catch (error) {
+      throw new Error(JSON.stringify(error))
     }
 
-    const { nonce } = fetchData[0].nonce
-
-    const siweMessage = new SiweMessage(message)
-    const resp = await siweMessage.verify({ signature })
-
     if (!resp.success && resp.error) {
-      throw new Error(resp.error.type)
+      throw new Error(JSON.stringify(resp.error))
     }
 
     if (resp.data.nonce !== nonce) {
