@@ -2,6 +2,8 @@
 	"imports": {
 		"siwe": "https://esm.sh/siwe@2.1.4",
 		"@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.38.4",
-		"@ethersproject/address": "https://esm.sh/@ethersproject/address@5.7.0"
+		"@ethersproject/address": "https://esm.sh/@ethersproject/address@5.7.0",
+		"js-sha256": "https://esm.sh/js-sha256@0.10.1",
+		"crypto-js": "https://esm.sh/crypto-js@4.2.0"
 	}
 }

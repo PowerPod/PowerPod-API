@@ -5,6 +5,7 @@ CREATE TABLE device_info (
     device_id VARCHAR(250) UNIQUE,
     publisher_name VARCHAR(250) UNIQUE,
     token VARCHAR(250) UNIQUE,
+    initialized boolean default false,
     inserted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
 );
