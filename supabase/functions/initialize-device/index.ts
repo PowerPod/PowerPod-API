@@ -63,12 +63,15 @@ Deno.serve(async (req) => {
       throw new Error(updateError.message)
     }
 
-    return new Response(
-      JSON.stringify({ ...fetchDeviceData[0], initialized: true }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    const resp = JSON.stringify({ ...fetchDeviceData[0], initialized: true })
+    const ciphertext = CryptoJS.AES.encrypt(
+      resp,
+      generateKey(deviceId)
+    ).toString()
+
+    return new Response(ciphertext, {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
