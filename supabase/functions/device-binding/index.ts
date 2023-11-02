@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const { data: fetchDeviceData, error: fetchDeviceError } =
       await supabaseAdmin
         .from('device_info')
-        .select('id')
+        .select('id, initialized')
         .eq('publisher_name', publisherName)
 
     if (fetchDeviceError) {
@@ -31,6 +31,10 @@ Deno.serve(async (req) => {
 
     if (fetchDeviceData.length == 0) {
       throw new Error('Device does not exist')
+    }
+
+    if (!fetchDeviceData[0].initialized) {
+      throw new Error('Device not initialized')
     }
 
     const { data: fetchData, error: fetchError } = await supabaseAdmin

@@ -24,10 +24,16 @@ Deno.serve(async (req) => {
 
     if (!deviceId || !encryptedText) throw new Error('missing params')
 
+    // const ciphertext = CryptoJS.AES.encrypt(
+    //   plaintext,
+    //   generateKey(deviceId)
+    // ).toString()
+    // console.log('ciphertext:' + ciphertext)
+
     const { data: fetchDeviceData, error: fetchDeviceError } =
       await supabaseAdmin
         .from('device_info')
-        .select('publisher_name, token')
+        .select('publisher_name, token, initialized')
         .eq('device_id', deviceId)
 
     if (fetchDeviceError) {
@@ -38,15 +44,31 @@ Deno.serve(async (req) => {
       throw new Error('Device does not exist')
     }
 
+    if (fetchDeviceData[0].initialized) {
+      throw new Error('Device already initialized')
+    }
+
     const decryptedText = decryptText(encryptedText, deviceId)
 
     if (decryptedText != plaintext) {
       throw new Error('Invalid device token')
     }
 
-    return new Response(JSON.stringify(fetchDeviceData[0]), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    const { error: updateError } = await supabaseAdmin
+      .from('device_info')
+      .update({ initialized: true })
+      .eq('device_id', deviceId)
+
+    if (updateError) {
+      throw new Error(updateError.message)
+    }
+
+    return new Response(
+      JSON.stringify({ ...fetchDeviceData[0], initialized: true }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
