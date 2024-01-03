@@ -4,6 +4,7 @@
 		"@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.38.4",
 		"@ethersproject/address": "https://esm.sh/@ethersproject/address@5.7.0",
 		"js-sha256": "https://esm.sh/js-sha256@0.10.1",
-		"crypto-js": "https://esm.sh/crypto-js@4.2.0"
+		"crypto-js": "https://esm.sh/crypto-js@4.2.0",
+		"ethers": "https://esm.sh/ethers@6.9.2"
 	}
 }

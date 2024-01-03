@@ -1,7 +1,8 @@
-import { generateNonce as getNonce, SiweMessage } from 'siwe'
+import { generateNonce as getNonce } from 'siwe'
 import { corsHeaders } from '../_shared/cors.ts'
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts'
 import { isAddress } from '@ethersproject/address'
+import { ethers } from 'ethers'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -9,21 +10,28 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { publicAddress, message, signature, publisherName } =
-      await req.json()
+    const { message: messageObj, signature } = await req.json()
 
-    if (!publicAddress || !message || !signature || !publisherName)
-      throw new Error('missing params')
+    if (!messageObj || !signature) throw new Error('missing params')
 
-    if (!isAddress(publicAddress)) {
+    console.log('message', messageObj)
+    console.log('signature', signature)
+
+    // const messageObj = JSON.parse(message)
+
+    if (!isAddress(messageObj.address)) {
       throw new Error('Invalid public address')
+    }
+
+    if (!messageObj.publisherName) {
+      throw new Error('Invalid publisher name')
     }
 
     const { data: fetchDeviceData, error: fetchDeviceError } =
       await supabaseAdmin
         .from('device_info')
         .select('id, initialized')
-        .eq('publisher_name', publisherName)
+        .eq('publisher_name', messageObj.publisherName)
 
     if (fetchDeviceError) {
       throw new Error(fetchDeviceError.message)
@@ -40,7 +48,7 @@ Deno.serve(async (req) => {
     const { data: fetchData, error: fetchError } = await supabaseAdmin
       .from('t_nonces')
       .select('public_address, nonce')
-      .eq('public_address', publicAddress)
+      .eq('public_address', messageObj.address)
 
     if (fetchError) {
       throw new Error(fetchError.message)
@@ -51,35 +59,23 @@ Deno.serve(async (req) => {
     }
     const { nonce } = fetchData[0]
 
-    let resp
-    try {
-      // const siweMessage = new SiweMessage({
-      //   nonce: 'oNCEHm5jzQU2WvuBB',
-      //   uri: 'https://localhost/login',
-      //   version: '1',
-      //   chainId: 1,
-      //   domain: 'https://localhost/login',
-      //   address: '0xC1a6A1DAA5A1aC828b6a5Ad1C59bc4bBF7be6723',
-      // })
-      const siweMessage = new SiweMessage(JSON.parse(message))
-      resp = await siweMessage.verify({ signature })
-    } catch (error) {
-      throw new Error(JSON.stringify(error))
-    }
-
-    if (!resp.success && resp.error) {
-      throw new Error(JSON.stringify(resp.error))
-    }
-
-    if (resp.data.nonce !== nonce) {
+    const signerAddr = ethers.verifyMessage(
+      JSON.stringify(messageObj),
+      signature
+    )
+    if (signerAddr !== messageObj.address) {
       throw new Error('Invalid signature')
+    }
+
+    if (nonce !== messageObj.nonce) {
+      throw new Error('Invalid nonce')
     }
 
     const newNonce = getNonce()
     const { error: updateError } = await supabaseAdmin
       .from('t_nonces')
       .update({ nonce: newNonce })
-      .eq('public_address', publicAddress)
+      .eq('public_address', messageObj.address)
 
     if (updateError) {
       throw new Error(updateError.message)
@@ -87,7 +83,10 @@ Deno.serve(async (req) => {
 
     const { error: insertError } = await supabaseAdmin
       .from('device_binding')
-      .insert({ publisher_name: publisherName, owner_address: publicAddress })
+      .insert({
+        publisher_name: messageObj.publisherName,
+        owner_address: messageObj.address,
+      })
 
     if (insertError) {
       throw new Error(insertError.message)
@@ -98,6 +97,7 @@ Deno.serve(async (req) => {
       status: 200,
     })
   } catch (error) {
+    console.log(error)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
