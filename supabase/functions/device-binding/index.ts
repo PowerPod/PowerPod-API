@@ -14,8 +14,8 @@ Deno.serve(async (req) => {
 
     if (!messageObj || !signature) throw new Error('missing params')
 
-    console.log('message', messageObj)
-    console.log('signature', signature)
+    // console.log('message', messageObj)
+    // console.log('signature', signature)
 
     // const messageObj = JSON.parse(message)
 
