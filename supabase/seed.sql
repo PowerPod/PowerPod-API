@@ -82,3 +82,20 @@ CREATE TABLE t_nonces (
     inserted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
 );
+
+----------------------------------------
+CREATE TABLE charge_session_statistics (
+    id bigint PRIMARY KEY,
+    publisher_name VARCHAR(250) not null,
+    session_id INT not null,
+    total_amount NUMERIC DEFAULT 0,
+    total_secs NUMERIC DEFAULT 0,
+    constraint charge_session_statistics_unq unique (publisher_name, session_id)
+);
+
+create table t_trace (
+    id int primary key,
+    content varchar(200),
+    progress TIMESTAMP WITHOUT TIME ZONE
+);
+----------------------------------------

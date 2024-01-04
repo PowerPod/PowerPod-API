@@ -1,5 +1,11 @@
 # ppd-api
 
+## New a function
+
+```bash
+supabase functions new function-name
+```
+
 ## Running Egde Functions Locally
 
 ```bash
@@ -33,4 +39,14 @@ curl --request POST 'http://localhost:54321/functions/v1/divice-binding' \
   --header 'Authorization: Bearer SUPABASE_ANON_KEY' \
   --header 'Content-Type: application/json' \
   --data '{ "publicAddress":"0x7...d64A", "message":"", "signature":"", "publisherName":"" }'
+```
+
+## Deploy to production
+
+```bash
+supabase login
+```
+
+```bash
+supabase functions deploy hello-world
 ```
