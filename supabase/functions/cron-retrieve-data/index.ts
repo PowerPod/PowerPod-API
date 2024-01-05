@@ -46,10 +46,19 @@ Deno.serve(async (req) => {
       const { error: insertError } = await supabaseAdmin
         .from('charge_session_statistics')
         .upsert({ ...row, id: row.id.toString() })
-
       if (insertError) {
         throw new Error(insertError.message)
       }
+
+      // update final statistic
+      const { error: statError } = await supabaseAdmin.rpc(
+        'update_charge_statistics',
+        { publisher_name_input: row.publisher_name }
+      )
+      if (statError) {
+        throw new Error(statError.message)
+      }
+
       progress = row.updated_at
     }
 
