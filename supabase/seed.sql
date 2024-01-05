@@ -90,7 +90,19 @@ CREATE TABLE charge_session_statistics (
     session_id INT not null,
     total_amount NUMERIC DEFAULT 0,
     total_secs NUMERIC DEFAULT 0,
+    inserted_at TIMESTAMP WITHOUT TIME ZONE,
+    updated_at TIMESTAMP WITHOUT TIME ZONE,
     constraint charge_session_statistics_unq unique (publisher_name, session_id)
+);
+
+CREATE TABLE charge_statistics (
+    publisher_name VARCHAR(250) PRIMARY KEY,
+    total_amount NUMERIC DEFAULT 0,
+    total_secs NUMERIC DEFAULT 0,
+    consumed_amount NUMERIC DEFAULT 0,
+    remaining_amount NUMERIC DEFAULT 0,
+    inserted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
 );
 
 create table t_trace (

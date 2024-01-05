@@ -9,6 +9,7 @@ interface ChargeSessionStatistic {
   total_amount: number
   total_secs: number
   updated_at: Date
+  inserted_at: Date
 }
 
 Deno.serve(async (req) => {
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
 
     progress = traceData.progress
     const res = await client.queryObject<ChargeSessionStatistic>(
-      `Select id, publisher_name, session_id, total_amount, total_secs, updated_at
+      `Select id, publisher_name, session_id, total_amount, total_secs, updated_at, created_at
         from t_charge_session_statistics 
           where updated_at > $1 order by updated_at limit 200`,
       [progress]
@@ -40,16 +41,16 @@ Deno.serve(async (req) => {
     // console.log(res)
 
     for (const row of res.rows) {
-      const { updated_at, ...dataForUpsert } = row
+      // const { updated_at, ...dataForUpsert } = row
 
       const { error: insertError } = await supabaseAdmin
         .from('charge_session_statistics')
-        .upsert({ ...dataForUpsert, id: row.id.toString() })
+        .upsert({ ...row, id: row.id.toString() })
 
       if (insertError) {
         throw new Error(insertError.message)
       }
-      progress = updated_at
+      progress = row.updated_at
     }
 
     return new Response('', {
