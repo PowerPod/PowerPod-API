@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
     progress = traceData.progress
     const res = await client.queryObject<ChargeSessionStatistic>(
-      `Select id, publisher_name, session_id, total_amount, total_secs, updated_at, created_at
+      `Select id, publisher_name, session_id, total_amount, total_secs, updated_at, inserted_at
         from t_charge_session_statistics 
           where updated_at > $1 order by updated_at limit 200`,
       [progress]
