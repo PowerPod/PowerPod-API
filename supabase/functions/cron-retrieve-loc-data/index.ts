@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const res = await client.queryObject<ChargeSessionStatistic>(
       `Select id, publisher_name, long, lat, alt, updated_at, inserted_at
         from t_locate_info 
-          where updated_at > $1 order by updated_at limit 100`,
+          where updated_at > ($1 + interval '1 second') order by updated_at limit 100`,
       [progress]
     )
 
