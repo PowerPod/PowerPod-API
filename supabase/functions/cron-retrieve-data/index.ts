@@ -34,11 +34,11 @@ Deno.serve(async (req) => {
     const res = await client.queryObject<ChargeSessionStatistic>(
       `Select id, publisher_name, session_id, total_amount, total_secs, updated_at, inserted_at
         from t_charge_session_statistics 
-          where updated_at > $1 order by updated_at limit 200`,
+          where updated_at > ($1 + interval '1 second') order by updated_at limit 200`,
       [progress]
     )
 
-    // console.log(res)
+    console.log(res.rows)
 
     for (const row of res.rows) {
       // const { updated_at, ...dataForUpsert } = row

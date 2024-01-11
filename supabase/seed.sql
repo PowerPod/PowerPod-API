@@ -110,4 +110,14 @@ create table t_trace (
     content varchar(200),
     progress TIMESTAMP WITHOUT TIME ZONE
 );
+
+CREATE TABLE locate_info (
+    id BIGSERIAL PRIMARY KEY,
+    publisher_name VARCHAR(250) UNIQUE not null,
+    long VARCHAR not null,
+    lat VARCHAR not null,
+    alt VARCHAR not null,
+    inserted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
+);
 ----------------------------------------
