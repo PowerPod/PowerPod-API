@@ -1,6 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts'
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts'
-import { pgPool } from '../_shared/externalDatabase.ts'
+import { pgClient } from '../_shared/externalDatabaseClient.ts'
 
 interface ChargeSessionStatistic {
   id: number
@@ -18,10 +18,9 @@ Deno.serve(async (req) => {
   // }
 
   let progress
-  let client
 
   try {
-    client = await pgPool.connect()
+    await pgClient.connect()
 
     const { data: traceData, error: traceError } = await supabaseAdmin
       .from('t_trace')
@@ -36,7 +35,7 @@ Deno.serve(async (req) => {
     progress = traceData.progress
     const progressDate = new Date(progress)
     progressDate.setSeconds(progressDate.getSeconds() + 1)
-    const res = await client.queryObject<ChargeSessionStatistic>(
+    const res = await pgClient.queryObject<ChargeSessionStatistic>(
       `Select id, publisher_name, session_id, total_amount, total_secs, updated_at, inserted_at
         from t_charge_session_statistics 
           where updated_at > $1 order by updated_at limit 200`,
@@ -77,8 +76,8 @@ Deno.serve(async (req) => {
       status: 400,
     })
   } finally {
-    if (client) {
-      client.release()
+    if (pgClient) {
+      pgClient.end()
     }
     if (progress) {
       await supabaseAdmin
