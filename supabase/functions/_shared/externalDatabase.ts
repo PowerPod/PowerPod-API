@@ -7,6 +7,9 @@ export const pgPool = new Pool(
     database: Deno.env.get('PG_DATABASE'),
     password: Deno.env.get('PG_PASSWORD') ?? '',
     port: 5432,
+    tls: {
+      enabled: false, // This explicitly disables SSL/TLS for the connection
+    },
   },
   10
 )
