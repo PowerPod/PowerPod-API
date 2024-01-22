@@ -13,9 +13,9 @@ interface ChargeSessionStatistic {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  // if (req.method === 'OPTIONS') {
+  //   return new Response('ok', { headers: corsHeaders })
+  // }
 
   let progress
   let client
@@ -71,9 +71,9 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.log(error)
+    console.error('error', error)
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       status: 400,
     })
   } finally {
@@ -86,5 +86,6 @@ Deno.serve(async (req) => {
         .update({ progress: progress })
         .eq('id', 1)
     }
+    console.log('done')
   }
 })

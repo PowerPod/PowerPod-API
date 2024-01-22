@@ -11,5 +11,5 @@ export const pgPool = new Pool(
       enabled: false, // This explicitly disables SSL/TLS for the connection
     },
   },
-  10
+  5
 )
