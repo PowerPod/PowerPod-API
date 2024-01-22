@@ -17,9 +17,12 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const client = await pgPool.connect()
   let progress
+  let client
+
   try {
+    client = await pgPool.connect()
+
     const { data: traceData, error: traceError } = await supabaseAdmin
       .from('t_trace')
       .select('progress')
@@ -31,11 +34,13 @@ Deno.serve(async (req) => {
     }
 
     progress = traceData.progress
+    const progressDate = new Date(progress)
+    progressDate.setSeconds(progressDate.getSeconds() + 1)
     const res = await client.queryObject<ChargeSessionStatistic>(
       `Select id, publisher_name, long, lat, alt, updated_at, inserted_at
         from t_locate_info 
-          where updated_at > ($1 + interval '1 second') order by updated_at limit 100`,
-      [progress]
+          where updated_at > $1 order by updated_at limit 100`,
+      [progressDate]
     )
 
     // console.log(res.rows)
@@ -63,11 +68,15 @@ Deno.serve(async (req) => {
       status: 400,
     })
   } finally {
-    client.release()
+    if (client) {
+      client.release()
+    }
 
-    await supabaseAdmin
-      .from('t_trace')
-      .update({ progress: progress })
-      .eq('id', 2)
+    if (progress) {
+      await supabaseAdmin
+        .from('t_trace')
+        .update({ progress: progress })
+        .eq('id', 2)
+    }
   }
 })
