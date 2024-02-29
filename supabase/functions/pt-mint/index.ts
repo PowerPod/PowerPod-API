@@ -16,10 +16,7 @@ function validateAmount(amount: string): boolean {
 const contractAddress = '0xAD32172b6B8860d3015FAeAbF289823453201568'
 const contractABI = ['function mint(address to, uint256 amount)']
 
-async function mintPoints(
-  to: string,
-  amount: string
-): Promise<ethers.TransactionReceipt> {
+async function mintPoints(to: string, amount: string) {
   const provider = new ethers.JsonRpcProvider(Deno.env.get('ETHEREUM_RPC_URL'))
   const signer = new ethers.Wallet(Deno.env.get('PRIVATE_KEY')!)
 
@@ -31,11 +28,19 @@ async function mintPoints(
 
   const amountInWei = ethers.parseUnits(amount, 21)
   const tx = await contract.mint(to, amountInWei)
-  await tx.wait() // Wait for the transaction to be mined
+  const receipt = await tx.wait() // Wait for the transaction to be mined
 
-  return tx
+  if (receipt.status === 1) {
+    console.log('Transaction successful')
+  } else {
+    console.error('Transaction failed')
+    throw new Error('Transaction failed')
+  }
 }
 
+// TODO: separate this function as a on-chain mint event monitor
+// create a new mint record with status "pending" and update it after mint event success
+// freeze first, then update database after mint event sucess
 async function updateDatabaseAfterMint(
   publisherName: string,
   ownerAddress: string,
