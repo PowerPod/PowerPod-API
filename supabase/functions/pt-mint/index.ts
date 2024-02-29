@@ -43,28 +43,112 @@ async function updateDatabaseAfterMint(
 ): Promise<void> {
   const numericAmount = parseFloat(amount)
 
-  // Start a transaction to ensure atomicity of database operations
-  const { error } = await supabaseAdmin
-    .from('charge_statistics')
-    .update({
-      consumed_amount: supabaseAdmin.raw('consumed_amount + ?', [
-        numericAmount,
-      ]),
-      remaining_amount: supabaseAdmin.raw('remaining_amount - ?', [
-        numericAmount,
-      ]),
-    })
+  // update final statistic
+  const { error } = await supabaseAdmin.rpc('updatedatabaseaftermintpoints', {
+    publisher_name_arg: publisherName,
+    owner_address_arg: ownerAddress,
+    amount_arg: numericAmount,
+  })
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+interface MessageObjType {
+  address: string
+  publisherName: string
+  amount: string
+  nonce: string
+}
+
+function checkRequest(messageObj: MessageObjType, signature: string): void {
+  if (!messageObj || !signature) throw new Error('missing params')
+
+  if (!isAddress(messageObj.address)) {
+    throw new Error('Invalid public address')
+  }
+
+  if (!messageObj.publisherName) {
+    throw new Error('Invalid publisher name')
+  }
+
+  // Check that amout is greater than 10 and has at most 18 digits after the decimal point
+  if (!validateAmount(messageObj.amount)) {
+    throw new Error('Invalid amount')
+  }
+}
+
+async function checkDeviceStatus(publisherName: string) {
+  const { data, error } = await supabaseAdmin
+    .from('device_info')
+    .select('id, initialized')
     .eq('publisher_name', publisherName)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    throw new Error(error.message)
+  }
 
-  const { error: insertError } = await supabaseAdmin.from('pt_mint').insert({
-    owner_address: ownerAddress,
-    publisher_name: publisherName,
-    amount: numericAmount,
-  })
+  if (data.length == 0) {
+    throw new Error('Device does not exist')
+  }
 
-  if (insertError) throw new Error(insertError.message)
+  if (!data[0].initialized) {
+    throw new Error('Device not initialized')
+  }
+}
+
+async function checkDeviceBinding(ownerAddress: string, publisherName: string) {
+  const { data, error } = await supabaseAdmin
+    .from('device_binding')
+    .select('id')
+    .eq('owner_address', ownerAddress)
+    .eq('publisher_name', publisherName)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (data.length == 0) {
+    throw new Error('Device not bound')
+  }
+}
+
+async function checkSignature(
+  messageObj: MessageObjType,
+  signature: string
+): Promise<void> {
+  const { data, error } = await supabaseAdmin
+    .from('t_nonces')
+    .select('public_address, nonce')
+    .eq('public_address', messageObj.address)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (data.length == 0) {
+    throw new Error('Nonce does not exist')
+  }
+  const { nonce } = data[0]
+  if (nonce !== messageObj.nonce) {
+    throw new Error('Invalid nonce')
+  }
+
+  const signerAddr = ethers.verifyMessage(JSON.stringify(messageObj), signature)
+  if (signerAddr !== messageObj.address) {
+    throw new Error('Invalid signature')
+  }
+}
+
+async function updateNonce(address: string, newNonce: string) {
+  const { error } = await supabaseAdmin
+    .from('t_nonces')
+    .update({ nonce: newNonce })
+    .eq('public_address', address)
+
+  if (error) {
+    throw new Error(error.message)
+  }
 }
 
 Deno.serve(async (req) => {
@@ -75,97 +159,25 @@ Deno.serve(async (req) => {
   try {
     const { message: messageObj, signature } = await req.json()
 
-    if (!messageObj || !signature) throw new Error('missing params')
+    checkRequest(messageObj, signature)
 
-    // console.log('message', messageObj)
-    // console.log('signature', signature)
-
-    // const messageObj = JSON.parse(message)
-
-    if (!isAddress(messageObj.address)) {
-      throw new Error('Invalid public address')
-    }
-
-    if (!messageObj.publisherName) {
-      throw new Error('Invalid publisher name')
-    }
-
-    // Check that amout is greater than 10 and has at most 18 digits after the decimal point
-    if (!validateAmount(messageObj.amount)) {
-      throw new Error('Invalid amount')
-    }
-
-    const { data: fetchDeviceData, error: fetchDeviceError } =
-      await supabaseAdmin
-        .from('device_info')
-        .select('id, initialized')
-        .eq('publisher_name', messageObj.publisherName)
-
-    if (fetchDeviceError) {
-      throw new Error(fetchDeviceError.message)
-    }
-
-    if (fetchDeviceData.length == 0) {
-      throw new Error('Device does not exist')
-    }
-
-    if (!fetchDeviceData[0].initialized) {
-      throw new Error('Device not initialized')
-    }
+    await checkDeviceStatus(messageObj.publisherName)
 
     // check table device_binding for existing record
-    const { data: fetchBindingData, error: fetchBindingError } =
-      await supabaseAdmin
-        .from('device_binding')
-        .select('id')
-        .eq('owner_address', messageObj.address)
-        .eq('publisher_name', messageObj.publisherName)
+    await checkDeviceBinding(messageObj.address, messageObj.publisherName)
 
-    if (fetchBindingError) {
-      throw new Error(fetchBindingError.message)
-    }
-
-    if (!fetchBindingData || fetchBindingData.length == 0) {
-      throw new Error('Device not bound')
-    }
-
-    const { data: fetchData, error: fetchError } = await supabaseAdmin
-      .from('t_nonces')
-      .select('public_address, nonce')
-      .eq('public_address', messageObj.address)
-
-    if (fetchError) {
-      throw new Error(fetchError.message)
-    }
-
-    if (fetchData.length == 0) {
-      throw new Error('Nonce does not exist')
-    }
-    const { nonce } = fetchData[0]
-
-    const signerAddr = ethers.verifyMessage(
-      JSON.stringify(messageObj),
-      signature
-    )
-    if (signerAddr !== messageObj.address) {
-      throw new Error('Invalid signature')
-    }
-
-    if (nonce !== messageObj.nonce) {
-      throw new Error('Invalid nonce')
-    }
+    await checkSignature(messageObj, signature)
 
     const newNonce = getNonce()
-    const { error: updateError } = await supabaseAdmin
-      .from('t_nonces')
-      .update({ nonce: newNonce })
-      .eq('public_address', messageObj.address)
+    await updateNonce(messageObj.address, newNonce)
 
-    if (updateError) {
-      throw new Error(updateError.message)
-    }
+    await mintPoints(messageObj.address, messageObj.amount)
 
-    const txReceipt = await mintPoints(messageObj.address, messageObj.amount)
+    await updateDatabaseAfterMint(
+      messageObj.publisherName,
+      messageObj.address,
+      messageObj.amount
+    )
 
     return new Response(JSON.stringify({}), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
