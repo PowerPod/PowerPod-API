@@ -120,4 +120,14 @@ CREATE TABLE locate_info (
     inserted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
 );
+
+
+CREATE TABLE pt_mint (
+    id SERIAL PRIMARY KEY,
+    owner_address VARCHAR(250) not null,
+    publisher_name VARCHAR(250) not null,
+    amount NUMERIC not null,
+    inserted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
+);
 ----------------------------------------
