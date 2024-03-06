@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../_shared/supabaseAdmin.ts'
 const contractAddress = '0xE4e035C9106Bc2db4674e0e216b0427903467bb3'
 const contractABI = ['function mint(uint256 id, address to, uint256 amount)']
 
-async function mintPoints(to: string, amount: string, pt_mint_id: number) {
+async function mintPoints(to: string, amount: number, pt_mint_id: number) {
   const provider = new ethers.JsonRpcProvider(Deno.env.get('ETHEREUM_RPC_URL'))
   const signer = new ethers.Wallet(Deno.env.get('PRIVATE_KEY')!)
 
@@ -14,7 +14,7 @@ async function mintPoints(to: string, amount: string, pt_mint_id: number) {
     signer.connect(provider)
   )
 
-  const amountInWei = ethers.parseUnits(amount, 21)
+  const amountInWei = ethers.parseUnits(amount.toString(), 21)
 
   const { error: testError } = await supabaseAdmin
     .from('pt_mint')
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       .from('pt_mint')
       .select('owner_address, amount, id, publisher_name')
       .eq('status', 'pending')
-      .eq('tx_hash', null)
+      .is('tx_hash', null)
 
     if (error) {
       throw new Error(error.message)
