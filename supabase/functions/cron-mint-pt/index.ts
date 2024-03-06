@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts'
 
-const contractAddress = '0xE4e035C9106Bc2db4674e0e216b0427903467bb3'
+const contractAddress = '0x7BDD924e87f04354DbDAc314b4b39e839403C0c1'
 const contractABI = ['function mint(uint256 id, address to, uint256 amount)']
 
 async function mintPoints(to: string, amount: number, pt_mint_id: number) {
@@ -65,10 +65,10 @@ Deno.serve(async (req) => {
         const { data, error } = await supabaseAdmin.rpc(
           'updatedatabaseaftermintpointssuccess',
           {
-            id,
-            amount,
-            owner_address,
-            publisher_name,
+            pt_mint_id: id,
+            amount_arg: amount,
+            owner_address_arg: owner_address,
+            publisher_name_arg: publisher_name,
           }
         )
         if (data == false) {
