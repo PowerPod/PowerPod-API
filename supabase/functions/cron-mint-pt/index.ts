@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
       if (success) {
         const { data, error } = await supabaseAdmin.rpc(
-          'updateDatabaseAfterMintPointsSuccess',
+          'updatedatabaseaftermintpointssuccess',
           {
             id,
             amount,
