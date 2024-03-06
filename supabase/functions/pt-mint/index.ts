@@ -5,7 +5,7 @@ import { isAddress } from '@ethersproject/address'
 import { ethers } from 'ethers'
 
 function validateAmount(amount: string): boolean {
-  const regex = /^(?!0\d|$)\d+(\.\d{1,18})?$/
+  const regex = /^(?!0\d|$)\d+(\.\d{1,3})?$/
   if (!regex.test(amount)) {
     return false
   }
@@ -38,9 +38,6 @@ async function mintPoints(to: string, amount: string) {
   }
 }
 
-// TODO: separate this function as a on-chain mint event monitor
-// create a new mint record with status "pending" and update it after mint event success
-// freeze first, then update database after mint event sucess
 async function updateDatabaseAfterMint(
   publisherName: string,
   ownerAddress: string,
@@ -49,11 +46,17 @@ async function updateDatabaseAfterMint(
   const numericAmount = parseFloat(amount)
 
   // update final statistic
-  const { error } = await supabaseAdmin.rpc('updatedatabaseaftermintpoints', {
-    publisher_name_arg: publisherName,
-    owner_address_arg: ownerAddress,
-    amount_arg: numericAmount,
-  })
+  const { data, error } = await supabaseAdmin.rpc(
+    'updatedatabaseaftermintpoints',
+    {
+      publisher_name_arg: publisherName,
+      owner_address_arg: ownerAddress,
+      amount_arg: numericAmount,
+    }
+  )
+  if (data == false) {
+    throw new Error('Failed to update database')
+  }
   if (error) {
     throw new Error(error.message)
   }
@@ -105,7 +108,7 @@ async function checkDeviceStatus(publisherName: string) {
 async function checkDeviceBinding(ownerAddress: string, publisherName: string) {
   const { data, error } = await supabaseAdmin
     .from('device_binding')
-    .select('id')
+    .select('publisher_name')
     .eq('owner_address', ownerAddress)
     .eq('publisher_name', publisherName)
 
@@ -176,7 +179,7 @@ Deno.serve(async (req) => {
     const newNonce = getNonce()
     await updateNonce(messageObj.address, newNonce)
 
-    await mintPoints(messageObj.address, messageObj.amount)
+    // await mintPoints(messageObj.address, messageObj.amount)
 
     await updateDatabaseAfterMint(
       messageObj.publisherName,
