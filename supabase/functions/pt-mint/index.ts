@@ -13,31 +13,6 @@ function validateAmount(amount: string): boolean {
   return numericAmount >= 10
 }
 
-const contractAddress = '0xAD32172b6B8860d3015FAeAbF289823453201568'
-const contractABI = ['function mint(address to, uint256 amount)']
-
-async function mintPoints(to: string, amount: string) {
-  const provider = new ethers.JsonRpcProvider(Deno.env.get('ETHEREUM_RPC_URL'))
-  const signer = new ethers.Wallet(Deno.env.get('PRIVATE_KEY')!)
-
-  const contract = new ethers.Contract(
-    contractAddress,
-    contractABI,
-    signer.connect(provider)
-  )
-
-  const amountInWei = ethers.parseUnits(amount, 21)
-  const tx = await contract.mint(to, amountInWei)
-  const receipt = await tx.wait() // Wait for the transaction to be mined
-
-  if (receipt.status === 1) {
-    console.log('Transaction successful')
-  } else {
-    console.error('Transaction failed')
-    throw new Error('Transaction failed')
-  }
-}
-
 async function updateDatabaseAfterMint(
   publisherName: string,
   ownerAddress: string,
