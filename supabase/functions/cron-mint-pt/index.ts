@@ -2,7 +2,10 @@ import { ethers } from 'ethers'
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts'
 
 const contractAddress = '0x7BDD924e87f04354DbDAc314b4b39e839403C0c1'
-const contractABI = ['function mint(uint256 id, address to, uint256 amount)']
+const contractABI = [
+  'function mint(uint256 id, address to, uint256 amount)',
+  'function minted(uint256) view returns (bool)',
+]
 
 async function mintPoints(to: string, amount: number, pt_mint_id: number) {
   const provider = new ethers.JsonRpcProvider(Deno.env.get('ETHEREUM_RPC_URL'))
@@ -22,6 +25,12 @@ async function mintPoints(to: string, amount: number, pt_mint_id: number) {
     .eq('id', pt_mint_id)
   if (testError) {
     throw new Error(testError.message)
+  }
+
+  // check if the id has already been minted
+  const minted = await contract.minted(pt_mint_id)
+  if (minted) {
+    return true
   }
 
   const tx = await contract.mint(pt_mint_id, to, amountInWei)
